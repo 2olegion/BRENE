@@ -283,6 +283,25 @@ config_uname_kernel_version="#1 SMP PREEMPT $(resetprop ro.build.date)"
 sed -i "s/^config_uname_kernel_release=.*/config_uname_kernel_release='${config_uname_kernel_release}'/" ${PERSISTENT_DIR}/config.sh
 sed -i "s/^config_uname_kernel_version=.*/config_uname_kernel_version='${config_uname_kernel_version}'/" ${PERSISTENT_DIR}/config.sh
 
+#### Adding sus mounts to umount list via built-in KernelSU kernel umount (not via add_try_umount from old susfs) ####
+# cat <<EOF >/dev/null
+# ## Don't forget to notify KernelSU that all ksu modules all mounted and ready ##
+# /data/adb/ksu/bin/ksud kernel notify-module-mounted
+
+# ## This is just an example to add the sus mounts to kernel umount ##
+# if [ ! -f "/data/adb/susfs_no_auto_add_kernel_umount" ]; then
+# 	cat /proc/1/mountinfo | grep -E "^5[0-9]{5,} .*$|KSU" | awk '{print $5}' | while read -r LINE; do /data/adb/ksu/bin/ksud kernel umount add --flags 2 "${LINE}" 2>/dev/null; done
+# fi
+# EOF
+
+#### Adding sus mounts to umount list via built-in KernelSU kernel umount (not via add_try_umount from old susfs) ####
+if [[ "${config_umount_suspicious_mounts}" == "1" ]]; then
+	## Don't forget to notify KernelSU that all ksu modules all mounted and ready ##
+	${KSU_BIN} kernel notify-module-mounted
+
+	cat /proc/1/mountinfo | grep -E "^5[0-9]{5,} .*$|KSU" | awk '{print $5}' | while read -r LINE; do ${KSU_BIN} kernel umount add --flags 2 "${LINE}" 2> /dev/null; done
+fi
+
 resetprop -c 2> /dev/null || true
 
 if [[ "${config_brene_logs}" == "1" ]]; then

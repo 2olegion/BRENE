@@ -55,6 +55,77 @@ const configs = [
 	{ id: 'paths_hiding__sdcard_android_data_media_obb' },
 ]
 
+// Load Kernel Version
+exec('uname -r').then((result) => {
+	const container = document.querySelector('#kernel-version .card-row__sub')
+
+	if (result.errno !== 0) {
+		container.innerText = 'Failed to load'
+		return
+	}
+	container.innerText = result.stdout
+})
+
+// Load ..5.u.S Status
+exec('[[ -e /sdcard/..5.u.S ]] && echo "Found ❌" || echo "Not found ✅"').then((result) => {
+	const container = document.querySelector('#sus-status .card-row__sub')
+
+	if (result.errno !== 0) {
+		container.innerText = 'Failed to load'
+		return
+	}
+	container.innerText = result.stdout
+})
+
+// Recommended Modules
+exec('ksud module list').then((result) => {
+	if (result.errno !== 0) return
+
+	const container = document.querySelector('#recommended-modules')
+	const modules = JSON.parse(result.stdout)
+	const moduleIds = modules.map((mod) => mod.id)
+	const cardRows = container.querySelectorAll('.card-row')
+
+	cardRows.forEach((row) => {
+		const moduleKey = row.getAttribute('data-module')
+		const statusSpan = row.querySelector('.status-text')
+
+		if (moduleIds.includes(moduleKey)) {
+			statusSpan.innerText = 'Status: Installed ✅'
+			statusSpan.style.color = '#4CAF50'
+		}
+	})
+
+	exec('[[ -e /data/adb/modules/TA_utl ]]').then((result) => {
+		if (result.errno !== 0) return
+
+		const card = document.querySelector('[data-module="tricky_addon"]')
+		const statusSpan = card.querySelector('.status-text')
+		statusSpan.innerText = 'Status: Installed ✅'
+		statusSpan.style.color = '#4CAF50'
+	})
+})
+
+// Incompatible Modules
+exec('ksud module list').then((result) => {
+	if (result.errno !== 0) return
+
+	const container = document.querySelector('#incompatible-modules')
+	const modules = JSON.parse(result.stdout)
+	const moduleIds = modules.map((mod) => mod.id)
+	const cardRows = container.querySelectorAll('.card-row')
+
+	cardRows.forEach((row) => {
+		const moduleKey = row.getAttribute('data-module')
+		const statusSpan = row.querySelector('.status-text')
+
+		if (moduleIds.includes(moduleKey)) {
+			statusSpan.innerText = 'Status: Installed ❌'
+			statusSpan.style.color = '#ff0000be'
+		}
+	})
+})
+
 // Load enabled features
 exec('susfs show enabled_features').then((result) => {
 	const container = document.getElementById('kernel-features-container')

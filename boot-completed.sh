@@ -199,6 +199,7 @@ if [[ "${config_paths_hiding__sdcard_android_data_media_obb}" == "1" ]]; then
 	packages="
 	io.github.muntashirakon.AppManager
 	com.github.capntrips.kernelflasher
+	com.machiav3lli.backup
 	"
 
 	for i in ${packages}; do

@@ -1,0 +1,72 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v0.0.52)'
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read version from module.prop
+        id: version
+        run: |
+          VERSION=$(grep '^version=' module.prop | cut -d'=' -f2)
+          VERSION_CODE=$(grep '^versionCode=' module.prop | cut -d'=' -f2)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+
+      - name: Build flashable ZIP
+        run: |
+          ZIP_NAME="BRENE-${{ steps.version.outputs.version }}.zip"
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+          # Alles außer .git, .github, .vscode, images, node_modules, package.json zippen
+          zip -r "$ZIP_NAME" . \
+            --exclude ".git/*" \
+            --exclude ".github/*" \
+            --exclude ".vscode/*" \
+            --exclude "images/*" \
+            --exclude "node_modules/*" \
+            --exclude "package.json" \
+            --exclude ".prettierrc" \
+            --exclude ".gitignore" \
+            --exclude ".gitattributes" \
+            --exclude "*.zip"
+
+      - name: Determine tag name
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: "BRENE ${{ steps.version.outputs.version }}"
+          body: |
+            ## BRENE ${{ steps.version.outputs.version }} (versionCode ${{ steps.version.outputs.version_code }})
+
+            ### Installation
+            Flash via KernelSU Manager oder kompatiblen Magisk-Fork.
+
+            Requires: `susfs4ksu` v2.1.0+
+          files: ${{ env.ZIP_NAME }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

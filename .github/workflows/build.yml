@@ -31,7 +31,6 @@ jobs:
           ZIP_NAME="BRENE-${{ steps.version.outputs.version }}.zip"
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
-          # Alles außer .git, .github, .vscode, images, node_modules, package.json zippen
           zip -r "$ZIP_NAME" . \
             --exclude ".git/*" \
             --exclude ".github/*" \
@@ -43,6 +42,14 @@ jobs:
             --exclude ".gitignore" \
             --exclude ".gitattributes" \
             --exclude "*.zip"
+
+      - name: Debug
+        if: always()
+        run: |
+          echo "ZIP_NAME=$ZIP_NAME"
+          echo "ENV ZIP_NAME=${{ env.ZIP_NAME }}"
+          ls -la *.zip 2>/dev/null || echo "no zips in root"
+          find . -name "*.zip" 2>/dev/null
 
       - name: Determine tag name
         id: tag
